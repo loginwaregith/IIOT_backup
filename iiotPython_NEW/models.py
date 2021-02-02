@@ -27,7 +27,7 @@ class production(db.Model):
     operation = db.Column(db.String)
     cycleTime = db.Column(db.String)
     inspectionStatus = db.Column(db.INTEGER)
-    status = db.Column(db.INTEGER)
+    status = db.Column(db.String)
     timeStamp = db.Column(db.String)
     machineId = db.Column(db.String)
     date = db.Column(db.String)

@@ -1,12 +1,21 @@
 #GETTTING ALL THE ACTUAL PIN NUMBERS FROM DATABASE
 import RPi.GPIO as GPIO
+from sendData import curs2,conn2
+import logging as log
+
+log.basicConfig(
+                    filename = "IIOT.log",
+                    format   = '%(asctime)s, %(levelname)-8s [%(pathname)s:%(lineno)d] %(message)s',
+                    filemode = 'a'
+                   )
+
+logger = log.getLogger()
+logger.setLevel(log.DEBUG)
 
 def getAndSetupPins(self):
-   conn=self.connection
-   curs=self.cursor
-   print("FETCHING THE PINS AND SIGNAL NAMES FROM THE DATABASE.....")  
-   curs.execute("SELECT * FROM pinout")
-   for row in curs.fetchall():
+   logger.debug("FETCHING THE PINS AND SIGNAL NAMES FROM THE DATABASE.....")
+   curs2.execute("SELECT * FROM pinout")
+   for row in curs2.fetchall():
       if(row[2]=="machine"):
           self.machineSignalInputPin=int(row[3]) 
       elif(row[2]=="cycle"):
@@ -23,8 +32,7 @@ def getAndSetupPins(self):
           self.runOutNotOkSignalInputPin=int(row[3])
       elif(row[2]=="spindle"):
           self.spindleSignalInputPin=int(row[3])   
-
-   print("Initilizing the gpio pins of raspberry pi .....")
+   logger.info("Initilizing the gpio pins of raspberry pi .....")
    GPIO.setmode(GPIO.BOARD)
    GPIO.setup(self.machineSignalInputPin,GPIO.IN)
    GPIO.setup(self.cycleSignalInputPin,GPIO.IN,pull_up_down=GPIO.PUD_UP)
