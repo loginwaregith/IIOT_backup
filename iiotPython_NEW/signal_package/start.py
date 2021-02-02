@@ -1,4 +1,5 @@
 from ._getCurrentSignal import getCurrentSignal
+import time
 
 def start(self,):
     machineSignalInputPin = self.machineSignalInputPin
@@ -26,3 +27,5 @@ def start(self,):
            getCurrentSignal(self,resetSignalInputPin,"resetON","resetOFF")          
            #object for runOutNotOk on/off signal
            getCurrentSignal(self,runOutNotOkSignalInputPin,"runoutNotOkON","runoutNotOkOFF")
+           
+           time.sleep(2)

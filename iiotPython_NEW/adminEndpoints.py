@@ -3,6 +3,18 @@ from models import *
 from flask_sqlalchemy import SQLAlchemy
 
 
+import logging as log
+log.basicConfig(
+                    filename = "IIOT.log",
+                    format   = '%(asctime)s, %(levelname)-8s [%(pathname)s:%(lineno)d] %(message)s',
+                    filemode = 'a'
+                   )
+
+logger = log.getLogger()
+
+logger.setLevel(log.DEBUG)
+
+
 admin = Blueprint('admin',__name__)
 
 @admin.route('/getServerIP', methods=['GET'])
@@ -11,12 +23,12 @@ def getServerIP():
        result=serverConf.query.get(1)
        if result != None:
           serverIp=result.ip
-          print(serverIp)
+          logger.debug(f"{serverIp}")          
           return jsonify({"result": {"status":1,"data":serverIp,"message":"success"}})
        else:
           return jsonify({"result":{"status":1,"message":"no previous data found","data":""}})  
    except Exception as e:
-       print(e)
+       logger.error(f"{e}")
        return jsonify({"result":{"status":0,"data":"","message":"failed"}})
 
 @admin.route('/updateServerIP', methods=['POST'])
@@ -35,7 +47,7 @@ def serverConfiguration():
           db.session.commit()
           return jsonify({"result":{"message":"server credentials saved successfully","status":1}})  
   except Exception as e:
-      print(e)   
+      logger.error(f"{e}")   
       return jsonify({"result":{"message":"something went wrong","status":0}})
 
 
@@ -46,7 +58,7 @@ def UpdatenetworkDetails():
    gateway=request.get_json()['gateway']
    dns=request.get_json()['dns']
    networkFileData="interface eth0 \n static ip_address={}\n static routers={}\n static domain_name_servers={}".format(ip,gateway,dns)
-   print(networkFileData)
+   logger.debug(f"{networkFileData}")
    try:
       result = networkConf.query.filter_by(id=1).scalar()
       if result != None:
@@ -91,7 +103,7 @@ def UpdateSignalskDetails():
          db.session.commit()
       return jsonify({"result": {"status" : 1,"message":"network details saved successfully"}})   
    except Exception as e:
-      print(e)
+      logger.error(f"{e}")
       return jsonify({"result": {"status" : 0,"message":"something went wrong"}})         
 
 
@@ -109,7 +121,7 @@ def getNetworkConf():
          return jsonify({"result":{"status":1,"message":"no previous data found","data":{}}})
 
    except Exception as e:
-      print(e)
+      logger.error(f"{e}")
       return jsonify({"result":{"status":0,"data":{},"message":"failed"}})      
 
 
@@ -136,7 +148,7 @@ def otherSettingsFunction():
          db.session.commit()
          return jsonify({"result": {"status" : 1,"message":"other settings saved successfully"}})   
    except Exception as e:
-      print(e)
+      logger.error(f"{e}")
       return jsonify({"result": {"status" : 0,"message":"something went wrong"}})  
 
 
@@ -157,7 +169,7 @@ def getOtherSettings():
       else:
          return jsonify({"result":{"status":1,"message":"no previous data found","data":{}}})
    except Exception as e:
-      print(e)
+      logger.error(f"{e}")
       return jsonify({"result":{"status":0,"data":{},"message":"failed"}}) 
             
 

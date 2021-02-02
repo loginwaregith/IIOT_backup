@@ -12,6 +12,7 @@ setup(
         author_email="gautampatil728gp4@gmail.com",
         description=DESCRIPTION,
         long_description=LONG_DESCRIPTION,
-        install_requires=[], # no dependencies required for use of this package
+        install_requires=['flask','flask-cors','flask-sqlalchemy'], # no dependencies required for use of this package
+
 
 )

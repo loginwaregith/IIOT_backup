@@ -6,6 +6,19 @@ import json
 import configuration as config
 from models import *
 
+
+import logging as log
+log.basicConfig(
+                    filename = "IIOT.log",
+                    format   = '%(asctime)s, %(levelname)-8s [%(pathname)s:%(lineno)d] %(message)s',
+                    filemode = 'a'
+                   )
+
+logger = log.getLogger()
+
+logger.setLevel(log.DEBUG)
+
+
 operator = Blueprint('operator',__name__)
 
 
@@ -16,18 +29,19 @@ def login():
    password=request.get_json()['password']
    resultData={}
    #calculate the current shift
+   
    TimeObj=datetime.now().time()
-   print("Current Time :" + str(TimeObj))
+   logger.debug(f"Current Time :{str(TimeObj)}")
    query=db.session.query(ShiftData).filter(and_(func.time(ShiftData.fromTime)<=TimeObj,func.time(ShiftData.toTime)>=TimeObj)) 
    for row in query.all():  
      if(row.id==1):
-         print("Shift 1")
+         logger.info("Shift 1")
          resultData['Shift']=row.shift             
      elif(row.id==2):
-         print("Shift 2")
+         logger.info("Shift 2")
          resultData['Shift']=row.shift 
      elif(row.id==3):
-         print("Shift 3")
+         logger.info("Shift 3")
          resultData['Shift']=row.shift                         
      else: 
          pass
@@ -43,28 +57,33 @@ def login():
          res=req.post(loginUrl,headers=headers,data=json.dumps({"UserID":username,"Password":password,"MachineCode":machineId}),timeout=4)     
          componentList=[]
          modelList=[]
-         data=res.json() 
-         print(data)
+         #operationList = []
+         data=res.json()
+         logger.debug(f"{data}")
          if(data['Error']!=None):
-              print("error")    
+              debug.error("error")    
               return jsonify({"result": {"status":0,"admin":False,"message":"invalid username or password"}}) 
          else:
               resultData['FullName']=data['FullName']
               data1=data['Components']
               data2=data['ProductModels']
+              #data3 = data['Operations']
               for datas in data1:
                  componentList.append(datas['Code'])
               for datas in data2:
                  modelObj={}
                  modelObj['code']=datas['Code']
                  modelObj['value']=datas['Value']   
-                 modelList.append(modelObj)       
+                 modelList.append(modelObj)
+              #for datas in data3:
+              #   operationList.append(datas['Code'])
               resultData['Components']=componentList
               resultData['Models']=modelList
-              print(resultData);
+              #resultData['Operations']=operationList
+              logger.debug(f"{resultData}")
               return jsonify({"result": {"status":1,"admin":False,"message":"success","data":resultData}})      
-   except Exception as e:         
-         print("error while connecting to server for login details",e)
+   except Exception as e:
+         logger.error(f"error while connecting to server for login details {e}")
          return jsonify({"result": {"status":0,"admin":False,"message":"Something Went Wrong, Check Network Connection"}})
 
              
@@ -72,8 +91,9 @@ def login():
 def loadScreen():
    #save shift data to databse
    try:
-       url="http://"+config.SERVER_IP+config.SERVER_ENDPOINT_START+"/ShiftList" 
-       print(url)     
+       url="http://"+config.SERVER_IP+config.SERVER_ENDPOINT_START+"/ShiftList"
+       logger.debug(f"{url}")
+       (url)     
        res=req.get(url,timeout=4)
        datas=res.json()
        for data in datas: 
@@ -90,13 +110,13 @@ def loadScreen():
                  pass
              else:    
                 db.session.add(shiftObj)
-                db.session.commit() 
-                print("added shift data to datbase") 
+                db.session.commit()
+                logger.info("added shift data to database") 
           except Exception as e:
-             print(e)
+             logger.error(f"{e}")
                      
    except:
-       print("something went wrong while getting shift data...." )
+       logger.error("something went wrong while getting shift data....")
 
    #response data will be stored in this variable
    #fetch all the reasons for the alarm signal from server
@@ -124,10 +144,10 @@ def loadScreen():
           data['batchSize']= result.batchSize
           holdingPin = result.holdingRelay
       else:
-          print("no other settings data in database")
+          logger.debug("no other settings data in database")
       return jsonify({"result": {"message":"success","status":1,"data":data}})      
    except Exception as e:
-      print(e) 
+      logger.error(f"{e}")
       return jsonify({"result": {"messgae":"something went wrong","status":0,"data":{}}})
 
 
@@ -149,34 +169,35 @@ def operatorScreen():
          if(row.id==4 or row.id==5):
             pass
          elif(row.id==1):
-            print("Shift 1")
+            logger.info("Shift 1")
             nowShift=row.shift 
          elif(row.id==2):
-            print("Shift 2")
+            logger.info("Shift 2")
             nowShift=row.shift 
          elif(row.id==3):
-            print("Shidt 3")
+            logger.info("Shift 3")
             nowShift=row.shift                         
          else: 
             nowShift="Second" 
 
     timeObj = datetime.now()
-    var_time=timeObj.strftime("%Y/%m/%d %H:%M:%S")
+    time1=timeObj.strftime("%Y/%m/%d %H:%M:%S")
     CurrentDate=datetime.now().date()
     CurrentTime=datetime.now().time()
-    sihTime=time(6, 59,59)
+    #print(type(CurrentTime))
+    sihTime=time(6,59,59)
     if(CurrentTime<=sihTime):
          date=CurrentDate-timedelta(1)
     else:
          date=CurrentDate
     presentDate=date.strftime("%Y-%m-%d")
-    productionObj=production(operatorName=username,jobId=jobId,shift=shift,component=component,modelName=model,operation=operation,cycleTime="5.5",inspectionStatus="0",status="0",timeStamp=var_time,machineId=machineId,date=presentDate)
+    productionObj=production(operatorName=username,jobId=jobId,shift=shift,component=component,modelName=model,operation=operation,cycleTime="5.5",inspectionStatus="0",status="0",timeStamp=time1,machineId=machineId,date=presentDate)
     try:
          db.session.add(productionObj)
          db.session.commit()
-         print("inserting into databse")
+         logger.info("inserting into databse")
     except Exception as e:
-         print(e)
+         logger.error(f"{e}")
     try:
          # print("releasing machine")
          releaseUrl="http://"+config.LOCALSERVER_IPADDRESS+":"+config.PORT+"/HoldMachine"
@@ -207,9 +228,9 @@ def alarmScreen():
     try:
          db.session.add(alarmObj)
          db.session.commit()
-         print("inserting into database")
+         logger.info("inserting into database")
     except Exception as e:
-         print(e)   
+         logger.error(f"{e}")   
          db.session.rollback()
          return jsonify({"result": {"status":0,"message":"something went wrong"}})
     
@@ -217,9 +238,9 @@ def alarmScreen():
     headers = config.HEADERS
     try:
           res=req.post(releaseUrl,headers=headers,data=json.dumps({"State":"Release"}),timeout=2)
-          print(res.status_code)
+          logger.debug(f"{res.status_code}")
     except:
-          print("error..")  
+          logger.error("error..")  
           return jsonify({"result": {"status":0,"message":"something went wrong"}})   
     return jsonify({"result": {"status":1,"message":"successfully data saved"}})
 
@@ -240,18 +261,19 @@ def IdleTimeout():
     try:
         db.session.add(idleTimeoutObj)
         db.session.commit()
-        print("inserting into database")
+        logger.info("inserting into database")
     except Exception as e:
-        print(e)   
+        logger.error(f"{e}")
         return jsonify({"result": {"status":0,"message":"something went wrong"}})
 
     releaseUrl="http://"+config.LOCALSERVER_IPADDRESS+":"+config.PORT+"/HoldMachine"
     headers = config.HEADERS
     try:
           res=req.post(releaseUrl,headers=headers,data=json.dumps({"State":"Release"}),timeout=2)
-          print(res.status_code)
+          logger.debug(f"{res.status_code}")
+          
     except:
-           print("error..")  
+           logger.error("error..") 
            return jsonify({"result": {"status":0,"message":"something went wrong"}})   
     return jsonify({"result": {"status":1,"message":"successfully data saved"}})
 
